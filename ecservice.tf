@@ -1,11 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 4.0"
-    }
-  }
-}
 provider "aws" {
   region = "us-east-1"
 }
@@ -38,7 +30,13 @@ resource "aws_ecs_task_definition" "hello_world" {
         "containerPort": 8000,
         "hostPort": 8000
       }
-    ]
+    ],
+    "secrets": [
+            {
+                "name": "host",
+                "valueFrom": "Staircasedbhost"
+            }
+        ]
   }
 ]
 DEFINITION
@@ -50,13 +48,23 @@ resource "aws_ecs_service" "hello_world" {
   task_definition = aws_ecs_task_definition.hello_world.arn
   desired_count   = 1
   launch_type     = "FARGATE"
+  
 
 
   network_configuration {
-    security_groups = ["sg-058b62fb1ee0495ed"]
+    security_groups = ["sg-0084b5d326bca03ba"]
     subnets         = ["subnet-065e7dd9f48aadde1"]
     assign_public_ip = true
     
+  }
+
+
+  depends_on      = [aws_alb_listener.http]
+
+  load_balancer {
+    target_group_arn=aws_alb_target_group.main.arn
+    container_name   = "terraformtaskplan"
+    container_port   = 8000
   }
 
 }
